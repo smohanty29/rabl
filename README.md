@@ -20,6 +20,9 @@ I wanted a simple and flexible system for generating my APIs. In particular, I w
 Anyone who has tried the 'to_json' method used in ActiveRecord for generating a JSON response has felt the pain of this restrictive approach.
 RABL is a general templating system created to solve these problems in an entirely new way.
 
+For a breakdown of common misconceptions about RABL, please check out our guide to 
+[understanding RABL](https://github.com/nesquena/rabl/wiki/Understanding-RABL) which can help clear up any confusion about this project.
+
 ## Breaking Changes ##
 
  * v0.6.14 (released June 28, 2012) requires the use of render_views
@@ -39,13 +42,13 @@ or add to your Gemfile:
 ```ruby
 # Gemfile
 gem 'rabl'
-# Also add either `json` or `yajl-ruby` as the JSON parser
-gem 'yajl-ruby'
+# Also add either `oj` or `yajl-ruby` as the JSON parser
+gem 'oj'
 ```
 
 and run `bundle install` to install the dependency.
 
-If you are using **Rails 2.X, Rails 3.X or Padrino**, RABL works without configuration.
+If you are using **Rails 2.3.8 (and up), Rails 3.X or Padrino**, RABL works without configuration.
 
 **Important:** With Padrino, be sure that **the rabl gem is listed after the padrino gem in your Gemfile**, otherwise
 Rabl will not register properly as a template engine.
@@ -108,6 +111,7 @@ RABL is intended to require little to no configuration to get working. This is t
 
 ```ruby
 # config/initializers/rabl_init.rb
+require 'rabl'
 Rabl.configure do |config|
   # Commented as these are defaults
   # config.cache_all_output = false
@@ -153,12 +157,12 @@ If `view_paths` is set to a path, this view path will be checked for every rabl 
 Add to this path especially when including Rabl in an engine and using view paths within a another Rails app.
 
 Note that the `json_engine` option uses [multi_json](http://intridea.com/2010/6/14/multi-json-the-swappable-json-handler) engine
-defaults so that in most cases you **don't need to configure this** directly. For example, if you wish to use yajl as
+defaults so that in most cases you **don't need to configure this** directly. For example, if you wish to use [oj](https://github.com/ohler55/oj) as
 the primary JSON encoding engine simply add that to your Gemfile:
 
 ```ruby
 # Gemfile
-gem 'yajl-ruby', :require => "yajl"
+gem 'oj'
 ```
 
 and RABL will automatically start using that engine for encoding your JSON responses!
@@ -253,6 +257,13 @@ or even multiple aliased attributes:
 ```ruby
 attributes :bar => :baz, :dog => :animal
 # => # { baz : <bar value>, animal : <dog value> }
+```
+
+or show attributes only if a condition is true:
+
+```ruby
+# m is the object being rendered, also supports :unless
+attributes :foo, :bar, :if => lambda { |m| m.condition? }
 ```
 
 Named and aliased attributes can not be combined on the same line. This currently does not work:
@@ -498,15 +509,19 @@ Rails and Padrino. I recommend a before_filter on that controller or directly sp
 
 There are many resources available relating to RABL including the [RABL Wiki](https://github.com/nesquena/rabl/wiki),
 and many tutorials and guides detailed below.
+You can check out the [RABL Site](http://nesquena.github.com/rabl) as well.
 
 ### Advanced Usage ###
 
 Links to resources for advanced usage:
 
- * Grape Integration: https://github.com/nesquena/rabl/wiki/Using-Rabl-with-Grape
- * Rendering JSON for a tree structure using RABL: https://github.com/nesquena/rabl/issues/70
- * Layouts (erb, haml and rabl) in RABL: https://github.com/nesquena/rabl/wiki/Using-Layouts
- * Backbone or [Ember.js](http://www.emberjs.com) Integration: https://github.com/nesquena/rabl/wiki/Backbone-Integration
+ * [Managing Complexity](https://github.com/nesquena/rabl/wiki/Managing-complexity-with-presenters)
+ * [Production Optimizations](https://github.com/nesquena/rabl/wiki/Rabl-In-Production)
+ * [Grape Integration](https://github.com/nesquena/rabl/wiki/Using-Rabl-with-Grape)
+ * [Rendering JSON for a tree structure using RABL](https://github.com/nesquena/rabl/issues/70)
+ * [Layouts (erb, haml and rabl) in RABL](https://github.com/nesquena/rabl/wiki/Using-Layouts)
+ * [Backbone or Ember.js Integration](https://github.com/nesquena/rabl/wiki/Backbone-Integration)
+ * [RABL with Rails Engines](https://github.com/nesquena/rabl/wiki/Setup-rabl-with-rails-engines)
 
 Please add your own usages and let me know so we can add them here! Also be sure to check out
 the [RABL Wiki](https://github.com/nesquena/rabl/wiki) for other usages.
@@ -532,14 +547,17 @@ Let me know if there's any other useful resources not listed here.
 
 There are other libraries that can either complement or extend the functionality of RABL:
 
+ * [versioncake](https://github.com/bwillis/versioncake) - Excellent library for easily versioning your RABL APIs
  * [gon](https://github.com/gazay/gon) - Exposes your Rails variables in JS with RABL support integrated.
+ * [rabl-rails](https://github.com/ccocchi/rabl-rails) - Reimplementation for RABL and Rails
+   [focused on speed](https://github.com/ccocchi/rabl-benchmark/blob/master/BENCHMARK).
 
 Let me know if there's any other related libraries not listed here.
 
 ### Troubleshooting ###
 
- * Redundant calls for a collection: https://github.com/nesquena/rabl/issues/142#issuecomment-2969107
- * Testing RABL Views: https://github.com/nesquena/rabl/issues/130#issuecomment-4179285
+ * [Redundant calls for a collection](https://github.com/nesquena/rabl/issues/142#issuecomment-2969107)
+ * [Testing RABL Views](https://github.com/nesquena/rabl/issues/130#issuecomment-4179285)
 
 ### Examples ###
 
@@ -582,6 +600,8 @@ Check out the patches for [msgpack support](https://github.com/nesquena/rabl/pul
 [BSON support](https://github.com/nesquena/rabl/pull/163) for reference.
 
 Please fork and contribute, any help in making this project better is appreciated!
+
+This project is a member of the [OSS Manifesto](http://ossmanifesto.org).
 
 ## Inspirations ##
 

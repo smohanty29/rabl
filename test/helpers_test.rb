@@ -17,6 +17,10 @@ context "Rabl::Helpers" do
       @helper_class.data_name(nil)
     end.equals(nil)
 
+    asserts "returns symbol if symbol with empty children" do
+      @helper_class.data_name(:user)
+    end.equals(:user)
+
     asserts "returns alias if hash with symbol is passed" do
       @helper_class.data_name(@user => :user)
     end.equals(:user)
@@ -39,13 +43,18 @@ context "Rabl::Helpers" do
       @helper_class.is_object?(@user)
     end.equals(true)
 
-    # asserts "returns true for an object with each" do
-    #   obj = Class.new { def each; end }
-    #   @helper_class.is_object?(obj.new)
-    # end.equals(true)
+    asserts "returns true for an object with each" do
+      obj = Class.new { def each; end }
+      @helper_class.is_object?(obj.new)
+    end.equals(true)
 
     asserts "returns true for a hash alias" do
       @helper_class.is_object?(@user => :user)
+    end.equals(true)
+
+    asserts "returns true for a struct" do
+      obj = Struct.new(:name)
+      @helper_class.is_object?(obj.new('foo'))
     end.equals(true)
 
     asserts "returns false for an array" do
@@ -58,14 +67,19 @@ context "Rabl::Helpers" do
       @helper_class.is_collection?(nil)
     end.equals(nil)
 
+    asserts "returns false for a struct" do
+      obj = Struct.new(:name)
+      @helper_class.is_collection?(obj.new('foo'))
+    end.equals(false)
+
     asserts "returns false for an object" do
       @helper_class.is_collection?(@user)
     end.equals(false)
 
-    # asserts "returns false for an object with each" do
-    #  obj = Class.new { def each; end }
-    #  @helper_class.is_collection?(obj.new)
-    # end.equals(false)
+    asserts "returns false for an object with each" do
+      obj = Class.new { def each; end }
+      @helper_class.is_collection?(obj.new)
+    end.equals(false)
 
     asserts "returns false for a hash alias" do
       @helper_class.is_collection?(@user => :user)

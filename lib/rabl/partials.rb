@@ -21,7 +21,7 @@ module Rabl
     # options must have :source (rabl file contents)
     # options can have :source_location (source filename)
     def object_to_hash(object, options={}, &block)
-      return object unless is_object?(object) || is_collection?(object)
+      return object if object.nil?
       return [] if is_collection?(object) && object.blank? # empty collection
       engine_options = options.reverse_merge(:format => "hash", :view_path => @_view_path, :root => (options[:root] || false))
       locals = {:object => object}

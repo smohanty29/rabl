@@ -1,6 +1,34 @@
 # CHANGELOG
 
-## 0.7.4 (unreleased)
+## 0.7.10 (unreleased)
+
+## 0.7.9
+
+ * Replace yajl with oj in docs and tests
+ * Fix handling of empty children arrays with tests (Thanks @sethvargo)
+
+## 0.7.8
+
+  * Additional fix for attribute conditional support
+
+## 0.7.7
+
+  * Fix #344 to avoid: "warning: default `to_a' will be obsolete"
+  * Fix #356 by adding 'known object classes' like struct to be recognized as objects.
+  * Fix #354 by adding 'if' and 'unless' to `attribute` (Thanks @andrewhubbs)
+
+## 0.7.6
+
+  * Fix render behavior by separating data_object and data_name in engine
+  * Fix regression with 'child' behavior with nil on extends (with tests)
+
+## 0.7.5
+
+  * Avoid incorrectly setting implicit objects for 'object false' partials
+
+## 0.7.4
+
+  * Fix issue #347 with extends failing for custom object templates
 
 ## 0.7.3
 

@@ -5,6 +5,14 @@ require File.expand_path('../teststrap', __FILE__)
 
 context "Rabl::Renderer" do
   helper(:tmp_path) { @tmp_path ||= Pathname.new(Dir.mktmpdir) }
+  # context_scope 'users', [@user]
+  helper(:context_scope) { |name, value|
+    scope = Object.new
+    stub(scope).controller { stub(Object).controller_name { name } }
+    scope.instance_variable_set :"@#{name.pluralize}", nil
+    scope.instance_variable_set :"@#{name}", value
+    scope
+  }
 
   context "#render" do
     asserts 'renders empty array' do
@@ -122,6 +130,78 @@ context "Rabl::Renderer" do
       JSON.parse(renderer.render)
     end.equals JSON.parse("{\"user\":{\"age\":24,\"name\":\"irvine\"}}")
 
+
+    asserts 'handles extends with child as nil' do
+      File.open(tmp_path + "foo.json.rabl", "w") do |f|
+        f.puts %q{
+          object @foo
+          node(:test) do |foo|
+            {
+              test: "#{foo.attribute}"
+            }
+          end
+        }
+      end
+
+      File.open(tmp_path + "bar.json.rabl", "w") do |f|
+        f.puts %q{
+          object false
+          node do
+            {
+              test_attribute: 'test_value'
+            }
+          end
+          child(@foos => :foo_collection) do
+            extends 'foo'
+          end
+        }
+      end
+
+      sc = Object.new
+      sc.instance_variable_set :@foos, nil
+      renderer = Rabl::Renderer.new('bar', false, :view_path => tmp_path, :scope => sc)
+      JSON.parse(renderer.render)
+    end.equals JSON.parse("{\"test_attribute\":\"test_value\", \"foo_collection\":null}")
+
+    asserts 'handles extends with custom node and object set false' do
+      File.open(tmp_path + "test.json.rabl", "w") do |f|
+        f.puts %q{
+          node(:foo) { 'baz' }
+        }
+      end
+
+      File.open(tmp_path + "user.json.rabl", "w") do |f|
+        f.puts %(
+          object false
+          node(:baz) { "bar" }
+          extends 'test'
+        )
+      end
+
+      scope = context_scope('users', [User.new, User.new, User.new])
+      renderer = Rabl::Renderer.new('user', false, :view_path => tmp_path, :scope => scope)
+      JSON.parse(renderer.render)
+    end.equals(JSON.parse(%Q^{"foo":"baz", "baz":"bar" }^))
+
+    asserts 'handles extends with attributes and object set false' do
+      File.open(tmp_path + "test.json.rabl", "w") do |f|
+        f.puts %q{
+          attributes :foo, :bar, :baz
+          node(:test) { |bar| bar.demo if bar }
+        }
+      end
+
+      File.open(tmp_path + "user.json.rabl", "w") do |f|
+        f.puts %(
+          object false
+          extends 'test'
+        )
+      end
+
+      renderer = Rabl::Renderer.new('user', false, :view_path => tmp_path)
+      JSON.parse(renderer.render)
+    end.equals(JSON.parse(%Q^{"test": null}^))
+
     # FIXME template is found and rendered but not included in final results
     # asserts 'handles paths for partial' do
     #   File.open(tmp_path + "test.json.rabl", "w") do |f|
@@ -165,9 +245,9 @@ context "Rabl::Renderer" do
         }
       end
 
-      scope = Object.new
-      scope.instance_variable_set :@users, nil
-      Rabl.render([], 'test', :view_path => tmp_path, :scope => scope)
+      sc = Object.new
+      sc.instance_variable_set :@users, nil
+      Rabl.render([], 'test', :view_path => tmp_path, :scope => sc)
     end.equals "{\"users\":[]}"
 
     asserts 'it renders an array when given an empty collection' do
@@ -211,7 +291,60 @@ context "Rabl::Renderer" do
       renderer = Rabl::Renderer.new('user', user, :view_path => tmp_path)
       JSON.parse(renderer.render)
     end.equals JSON.parse("{\"user\":{\"name\":\"irvine\",\"object\":{\"gender\":\"male\"},\"gender\":\"male\"}}")
-  end
+
+
+    asserts "it renders for object false" do
+      File.open(tmp_path + "test2.rabl", "w") do |f|
+        f.puts %q{
+          object false
+          node(:foo) { 'bar' }
+        }
+      end
+
+      user = User.new(:name => 'ivan')
+      JSON.parse(Rabl.render(user, 'test2', :view_path => tmp_path))
+    end.equals JSON.parse("{\"foo\":\"bar\"}")
+
+    asserts "it renders for object key specified in template" do
+      File.open(tmp_path + "test3.rabl", "w") do |f|
+        f.puts %q{
+          object @user => :person
+          attributes :age, :name
+        }
+      end
+
+      user = User.new(:name => 'ivan')
+      JSON.parse(Rabl.render(user, 'test3', :view_path => tmp_path))
+    end.equals JSON.parse("{\"person\":{\"age\":24,\"name\":\"ivan\"} }")
+
+    asserts "it renders for overwriting object key specified in render" do
+      File.open(tmp_path + "test4.rabl", "w") do |f|
+        f.puts %q{
+          object @user => :person
+          attributes :age, :name
+        }
+      end
+
+      sc = Object.new
+      sc.instance_variable_set :@user, nil
+      user = User.new(:name => 'ivan')
+      JSON.parse(Rabl.render({ user => :human }, 'test4', :view_path => tmp_path, :scope => sc))
+    end.equals JSON.parse("{\"human\":{\"age\":24,\"name\":\"ivan\"} }")
+
+    asserts "it renders for specific object key passed to render" do
+      File.open(tmp_path + "test5.rabl", "w") do |f|
+        f.puts %q{
+          object @user
+          attributes :age, :name
+        }
+      end
+
+      sc = Object.new
+      sc.instance_variable_set :@user, nil
+      user = User.new(:name => 'ivan')
+      JSON.parse(Rabl.render({ user => :person }, 'test5', :view_path => tmp_path, :scope => sc))
+    end.equals JSON.parse("{\"person\":{\"age\":24,\"name\":\"ivan\"} }")
+  end # render
 
   context '.json' do
     asserts 'it renders json' do
@@ -225,7 +358,7 @@ context "Rabl::Renderer" do
       user = User.new(:name => 'ivan')
       JSON.parse(Rabl::Renderer.json(user, 'test', :view_path => tmp_path))
     end.equals JSON.parse("{\"user\":{\"age\":24,\"name\":\"ivan\",\"float\":1234.56}}")
-  end
+  end # json
 
   context '.msgpack' do
     asserts 'it renders msgpack' do
